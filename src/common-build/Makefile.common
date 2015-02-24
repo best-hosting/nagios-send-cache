@@ -1,0 +1,224 @@
+
+# Usage.
+#
+# For each project $(proj) define variable 'project_$(proj)' containing list
+# of files (full pathes) i want to install. Then if files should be installed
+# as "program" (with 'x' permissions) add project $(proj) to $(programs)
+# variable, if as "data" (without 'x' permissions) - to $(data) variable.
+#
+# And then include this Makefile. It'll automatically generate build_x,
+# clean_x, install_x and remove_x phony targets for every project x listed in
+# $(programs) and $(data), and make each installation location (file) a target
+# too.
+#
+# Generated project targets use $(builddir) and $(srcdir) variables (see
+# defaults below).
+#
+# Build is done in $(builddir)/$(proj) and, if project is 'top', in
+# $(builddir). Also, each phony target tries to invoke sub-make in
+# $(srcdir)/$(proj) and, if project is 'top', in $(srcdir).
+#
+# See details below.
+
+# Defaults for programs.
+# Do not use `cp -a`, because fallback build target is to just copy source
+# file to build directory, and if source has hardlinks, `cp -a` will preserve
+# them.
+cp		    ?= cp -v
+mkdir		    ?= mkdir -pv
+rm		    ?= rm -f -v
+rmdir		    ?= rmdir -v --ignore-fail-on-non-empty
+
+program_install     ?= install -v -m 0755
+data_install	    ?= install -v -m 0644
+mkinstalldir	    ?= install -v -d -m 0755
+
+builddir	    ?= build
+srcdir		    ?= src
+prefix		    ?= /usr/local
+
+
+all : build
+	
+
+### Implicit build rules.
+
+$(builddir)/% :: $(srcdir)/%.sh
+	@echo Build shell
+	$(mkdir) $(dir $@)
+	$(cp) $< $@
+
+$(builddir)/% :: $(srcdir)/%.php
+	@echo Build php
+	$(mkdir) $(dir $@)
+	$(cp) $< $@
+
+# No-op for now.
+#$(builddir)/% :: $(srcdir)/%.m4
+#	@echo Build m4
+#	@echo cp $< $@
+
+# This should build under $(builddir) , because there should be no targets
+# under $(srcdir) (only prerequisitives).
+# FIXME: Why it causes recursion?
+#% : %.m4
+#	@echo Build m4 (intermediate)
+#	@echo cp $< $@
+
+$(builddir)/% :: $(srcdir)/%
+	@echo Build fallback $@
+	mkdir -pv $(dir $@)
+	$(cp) $< $@
+
+### Some path functions.
+#
+# If supplied path is below (note, that equal is not good enough) make's
+# $(CURDIR), expands to supplied path, otherwise - to empty string. I do not
+# check whether supplied path is file or directory.  Path may not exist,
+# because i use `abspath` (and, thus, symlinks may trick this function).
+define is_path_below
+$(if $(patsubst $(abspath $(CURDIR))/%,,$(abspath $(1))),,$(1))
+endef
+# If supplied path exists, expands to supplied path, otherwise - to empty
+# string.
+define does_exist
+$(wildcard $(1))
+endef
+# If Makefile exists in supplied directory path, expands to supplied directory
+# path, otherwise - to empty string.
+define is_there_makefile_below
+$(and $(call does_exist,$(1)/Makefile),$(call is_path_below,$(1)))
+endef
+
+### Generic build and install.
+#
+# Function generating regular build and install targets for project.
+#
+# Args:
+# 1 - install as data (using $(install_data) command) or program (using
+# $(install_program) command).
+# 2 - project name (i'll reference it as $(proj) below). Variable
+# $(project_$(2)) must be defined and contain target files this project want
+# to install.
+#
+# This function defines following phony targets: build_$(proj) and
+# clean_$(proj) for building and cleaning build files, install_$(proj) and
+# remove_$(proj) for installing and removing installed files. Also, each file
+# from $(project_$(proj)) variable will be made a target by itself.
+#
+# Depending on first argument for function, i will use $(install_data) or
+# $(install_program) commands for actual installation.  Actual install
+# commands are executed for file targets only, which phony targets trigger as
+# dependencies. Also, every phony target tries to invoke sub-make in directory
+# $(srcdir)/$(proj), if this directory is strictly below (pathes must not
+# equal) make's $(CURDIR) and there exist Makefile. If project is 'top', i'll
+# try just $(srcdir) (which never match, if $(srcdir) is '.').
+#
+# Project $(proj) will be build in $(builddir)/$(proj) and built files will be
+# matched against installation locations by file name. If project is 'top',
+# it'll build in $(builddir) directory.
+#
+# Note, that i can't add prefix 'project_' for project name in caller (e.g.
+# pass project_foo as argument directly from `call` in foreach), because
+# project name used here as subdirectory name under $(builddir) too.
+#
+# Evaluation passes:
+# 1st pass - only argument substitutions have expanded.
+# 2nd pass (by eval) - project_x value, `patsubst`, target/prerequisitives and
+# variables have expanded (usual make first phase, see 3.9).
+# 3rd pass (by secondexpansion) - target/prerequisitives stem expansion and
+# `notdir` have run over stem.
+#
+# Note, that i must expand g_builddir value at the second pass, because at
+# first pass it is not set at all.
+#
+# Note, that if g_builddir is used in rule recipe (like in clean_x target), i
+# should preserve its value in rule-specific variable, since following calls
+# of generic_build will overwrite g_builddir value, and when any recipe will
+# be evaluated (at second make phase) g_builddir value from last
+# generic_build's call will be used.
+#
+# Note, that clean target for 'top' project does not remove build directory,
+# (which is $(builddir) itself). Thus, for catch-all clean target i need to
+# remove $(builddir) manually.
+#
+# Here is the other variant of secondexpansion target below with
+# target-specific variable:
+#  $$(install_$(proj)) : cur_builddir := $$(builddir)$$(patsubst /top/,/,/$(proj)/)
+#  $$(install_$(proj)) : % : $$$$(cur_builddir)$$$$(notdir %)
+#
+# Build alternative:
+#
+#  .SECONDEXPANSION:
+#  build_$(2) : cur_bilddir := $$(builddir)$$(patsubst /top/,/,/$(2)/)
+#  build_$(2) : $$$$(foreach file,$$(project_$(2)),$$$$(cur_builddir)$$$$(notdir $$$$(file)))
+#	@echo $$^
+#	@echo Finished building project: $(2)
+#
+define generic_build
+  g_srcdir	:= $$(srcdir)$$(patsubst /top/,/,/$(2)/)
+  g_builddir	:= $$(builddir)$$(patsubst /top/,/,/$(2)/)
+
+  .PHONY: build_$(2)
+  build_$(2) : g_srcdir := $$(g_srcdir)
+  build_$(2) : $$(foreach file,$$(project_$(2)),$$(g_builddir)$$(notdir $$(file)))
+    ifneq ($$(call is_there_makefile_below,$$(g_srcdir)),)
+	$$(MAKE) -C $$(g_srcdir) build
+    endif
+	@echo Finished building project: $(2)
+  .PHONY: clean_$(2)
+  clean_$(2) : g_srcdir := $$(g_srcdir)
+  clean_$(2) : g_builddir := $$(g_builddir)
+  clean_$(2) : 
+	$$(rm) $$(foreach file,$$(project_$(2)),$$(g_builddir)$$(notdir $$(file)))
+    ifneq ($$(call is_there_makefile_below,$$(g_srcdir)),)
+	$$(MAKE) -C $$(g_srcdir) clean
+    endif
+    ifneq ($(2),top)
+	$$(rmdir) $$(g_builddir) || true
+    endif
+	@echo Finished cleaning build of project: $(2)
+
+  .PHONY: install_$(2)
+  install_$(2) : g_srcdir := $$(g_srcdir)
+  install_$(2) : $$(project_$(2))
+    ifneq ($$(call is_there_makefile_below,$$(g_srcdir)),)
+	$$(MAKE) -C $$(g_srcdir) install
+    endif
+	@echo Finished installing project: $(2)
+  .PHONY: remove_$(2)
+  remove_$(2) : g_srcdir := $$(g_srcdir)
+  remove_$(2) : 
+	$$(rm) $$(project_$(2))
+    ifneq ($$(call is_there_makefile_below,$$(g_srcdir)),)
+	$$(MAKE) -C $$(g_srcdir) remove
+    endif
+	@echo Finished removing installation of project: $(2)
+
+  .SECONDEXPANSION:
+  $$(project_$(2)) : % : $$(g_builddir)$$$$(notdir %)
+	$$($(1)_install) $$< $$@
+endef
+
+# Installation targets generation cycles.
+#
+# First cycle will invoke generic_build function for all projects from
+# $(data) variable, second - from $(programs) variable. These variables must
+# list project names (not files!). For each name $(proj) corresponding
+# $(project_$(proj)) variable must be defined and contain list of target files
+# i want to install.
+$(foreach proj,$(data),$(eval $(call generic_build,data,$(proj))))
+$(foreach proj,$(programs),$(eval $(call generic_build,program,$(proj))))
+
+
+# Default catch-all targets.
+build : $(addprefix build_,$(data)) $(addprefix build_,$(programs))
+	
+clean : $(addprefix clean_,$(data)) $(addprefix clean_,$(programs))
+	$(rm) -r $(builddir)
+
+install : $(addprefix install_,$(data)) $(addprefix install_,$(programs))
+	
+remove : $(addprefix remove_,$(data)) $(addprefix remove_,$(programs))
+	
+
