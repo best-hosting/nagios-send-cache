@@ -14,7 +14,7 @@ else
 endif
 srcdir		    := src
 
-project_top	    := $(plugindir)/send-cache $(sbindir)/write-plugin-cache
+project_top	    := $(plugindir)/send_cache $(sbindir)/write-plugin-cache
 
 programs	    := top
 
