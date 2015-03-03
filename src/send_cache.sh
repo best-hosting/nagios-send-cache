@@ -71,9 +71,9 @@ else
     if [ -r "$cache_file" ]; then
 	ret="$(head -c 1 "$cache_file")"
 	if [ "$ret" != "$ret_ok" \
-	    -o "$ret" != "$ret_warn" \
-	    -o "$ret" != "$ret_crit" \
-	    -o "$ret" != "$ret_unkn" ];
+	    -a "$ret" != "$ret_warn" \
+	    -a "$ret" != "$ret_crit" \
+	    -a "$ret" != "$ret_unkn" ];
 	then
 	    res="Unexpected plugin exit code '$ret'"
 	    ret=$ret_unkn
