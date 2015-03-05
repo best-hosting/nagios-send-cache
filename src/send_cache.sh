@@ -23,7 +23,7 @@ readonly ret_ok=0
 cache_file=''
 plugin=''
 ret="$ret_ok"
-res=''
+res='OK'
 
 usage()
 {
@@ -78,7 +78,7 @@ else
 	    res="Unexpected plugin exit code '$ret'"
 	    ret=$ret_unkn
 	fi
-	res="$res$nl$(tail -n '+2' "$cache_file")"
+	res="$res, $(tail -n '+2' "$cache_file")"
     else
 	ret=$ret_unkn
 	res="Cache '$cache_file' is empty."
