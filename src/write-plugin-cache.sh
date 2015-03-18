@@ -110,6 +110,6 @@ fi
 	ret="$ret_unkn"
     fi
     echo "$ret"
-    echo "$res" | paste -d, -s
+    echo "$res" | paste -d, -s -
 } > "$cache_file"
 
