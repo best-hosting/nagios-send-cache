@@ -1,22 +1,22 @@
 
 # Defaults for installation directories. No trailing slash.
-prefix		    ?= /usr/local
-sbindir		    ?= $(prefix)/sbin
-plugindir	    ?= $(prefix)/lib/nagios/plugins
+prefix              ?= /usr/local
+sbindir             ?= $(prefix)/sbin
+plugindir           ?= $(prefix)/lib/nagios/plugins
 
 # Use build directory in current directory, if invoked manually, and in
 # central build directory otherwise.
 ifeq ($(MAKELEVEL), 0)
-    builddir	    := build
+    builddir        := build
 else
-    builddir	    ?= build
-    builddir	    := $(builddir)/$(notdir $(CURDIR))
+    builddir        ?= build
+    builddir        := $(builddir)/$(notdir $(CURDIR))
 endif
-srcdir		    := src
+srcdir              := src
 
-project_top	    := $(plugindir)/send_cache $(sbindir)/write-plugin-cache
+project_top         := $(plugindir)/send_cache $(sbindir)/write-plugin-cache
 
-programs	    := top
+programs            := top
 
 include ./src/common-build/Makefile.common
 
