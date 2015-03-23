@@ -1,0 +1,2 @@
+Makefile with some common rules and functions for simplifying builing of other
+projects. See Makefile.common for usage and details .
