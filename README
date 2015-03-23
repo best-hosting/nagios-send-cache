@@ -1,3 +1,6 @@
+Git subtrees:
+src/common-build/           - common-build repository .
+
 send-cache is plugin for returning cache content to nagios. It may be called
 through NRPE and is, effectively, equivalent to passive plugins.  The main
 drawback of passive plugins, is that it can update state of other (passive?)
