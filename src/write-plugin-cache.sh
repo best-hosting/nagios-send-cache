@@ -40,29 +40,29 @@ fi
 while [ $# -gt 0 ]; do
     case "$1" in
       '--help' )
-	usage
-	exit 1
+        usage
+        exit 1
       ;;
       '--cache' )
-	if [ -z "${2:-}" ]; then
-	    error "Cache file path can't be empty."
-	    exit 1
-	fi
-	cache_file="$2"
-	shift 2
+        if [ -z "${2:-}" ]; then
+            error "Cache file path can't be empty."
+            exit 1
+        fi
+        cache_file="$2"
+        shift 2
       ;;
       '--' )
-	shift
-	break
+        shift
+        break
       ;;
       * )
-	if [ -z "${1:-}" ]; then
-	    error "Plugin path can't be empty."
-	    exit 1
-	fi
-	plugin="$1"
-	shift
-	break
+        if [ -z "${1:-}" ]; then
+            error "Plugin path can't be empty."
+            exit 1
+        fi
+        plugin="$1"
+        shift
+        break
     esac
 done
 readonly plugin
@@ -97,17 +97,17 @@ fi
 
 {
     if [ "$ret" = "$ret_ok" ]; then
-	res="${res:-OK}"
+        res="${res:-OK}"
     elif [ "$ret" = "$ret_warn" ]; then
-	res="${res:-Some warning..}"
+        res="${res:-Some warning..}"
     elif [ "$ret" = "$ret_crit" ]; then
-	res="${res:-Some critical..}"
+        res="${res:-Some critical..}"
     elif [ "$ret" = "$ret_unkn" ]; then
-	res="${res:-Some unknown..}"
+        res="${res:-Some unknown..}"
     else
-	res="${res:+Unexpected plugin exit code '$ret'$nl$res}"
-	res="${res:-Unexpected plugin exit code '$ret'}"
-	ret="$ret_unkn"
+        res="${res:+Unexpected plugin exit code '$ret'$nl$res}"
+        res="${res:-Unexpected plugin exit code '$ret'}"
+        ret="$ret_unkn"
     fi
     echo "$ret"
     echo "$res" | paste -d, -s -

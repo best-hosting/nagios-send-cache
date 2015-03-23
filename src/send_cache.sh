@@ -35,21 +35,21 @@ usage()
 while [ $# -gt 0 ]; do
     case "$1" in
       '--help' )
-	usage 1>&2
-	exit $ret_unkn
+        usage 1>&2
+        exit $ret_unkn
       ;;
       '--cache' )
-	cache_file="$2"
-	shift 2
+        cache_file="$2"
+        shift 2
       ;;
       '--' )
-	shift
-	break
+        shift
+        break
       ;;
       * )
-	plugin="$1"
-	shift
-	break
+        plugin="$1"
+        shift
+        break
     esac
 done
 readonly plugin
@@ -62,26 +62,26 @@ if [ -z "$cache_file" ]; then
 else
     # Default cache directory, if path is relative.
     if [ "${cache_file#.}" != "$cache_file" ]; then
-	cache_file="$(pwd)/$cache_file"
+        cache_file="$(pwd)/$cache_file"
     elif [ "${cache_file#/}" = "$cache_file" ]; then
-	cache_file="/var/cache/nagios3/$cache_file"
+        cache_file="/var/cache/nagios3/$cache_file"
     fi
     readonly cache_file
 
     if [ -r "$cache_file" ]; then
-	ret="$(head -c 1 "$cache_file")"
-	if [ "$ret" != "$ret_ok" \
-	    -a "$ret" != "$ret_warn" \
-	    -a "$ret" != "$ret_crit" \
-	    -a "$ret" != "$ret_unkn" ];
-	then
-	    res="Unexpected plugin exit code '$ret'"
-	    ret=$ret_unkn
-	fi
-	res="${res:+$res, }$(tail -n '+2' "$cache_file")"
+        ret="$(head -c 1 "$cache_file")"
+        if [ "$ret" != "$ret_ok" \
+            -a "$ret" != "$ret_warn" \
+            -a "$ret" != "$ret_crit" \
+            -a "$ret" != "$ret_unkn" ];
+        then
+            res="Unexpected plugin exit code '$ret'"
+            ret=$ret_unkn
+        fi
+        res="${res:+$res, }$(tail -n '+2' "$cache_file")"
     else
-	ret=$ret_unkn
-	res="Cache '$cache_file' is empty."
+        ret=$ret_unkn
+        res="Cache '$cache_file' is empty."
     fi
 fi
 
