@@ -1,0 +1,22 @@
+send-cache is plugin for returning cache content to nagios. It may be called
+through NRPE and is, effectively, equivalent to passive plugins.  The main
+drawback of passive plugins, is that it can update state of other (passive?)
+plugin, just by specifying it in PROCESS_SERVICE_CHECK_RESULT.  But by using
+"emulation" of passive checks with send-cache active plugin, i can avoid such
+situation.
+
+Cache file should be written by write-plugin-cache . I.e. i should call other
+nagios plugin, which result i want to write in cache, by passing its path and
+arguments to write-plugin-cache . Then write-plugin-cache will invoke plugin
+and save its result to cache. By default cache file name is plugin name
+followed by '.cache' suffix. Though, cache file path or just file name may be
+specified using '--cache' option. If path to cache file does not specified
+(either just name given to '--cache' or no '--cache' option at all), cache
+file will be placed in /var/cache/nagios3 .
+
+send-cache plugin also accepts '--cache' option, which should be used if cache
+has been placed in non-standard location . Or if i've used default cache in
+write-plugin-cache, i may just call send-cache with plugin name (the same way
+as i did for write-plugin-cache) . Then send-cache will also assume default
+cache file name for plugin.
+
