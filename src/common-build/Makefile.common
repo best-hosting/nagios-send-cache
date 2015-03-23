@@ -24,18 +24,18 @@
 # Do not use `cp -a`, because fallback build target is to just copy source
 # file to build directory, and if source has hardlinks, `cp -a` will preserve
 # them.
-cp		    ?= cp -v
-mkdir		    ?= mkdir -pv
-rm		    ?= rm -f -v
-rmdir		    ?= rmdir -v --ignore-fail-on-non-empty
+cp                  ?= cp -v
+mkdir               ?= mkdir -pv
+rm                  ?= rm -f -v
+rmdir               ?= rmdir -v --ignore-fail-on-non-empty
 
 program_install     ?= install -v -m 0755
-data_install	    ?= install -v -m 0644
-mkinstalldir	    ?= install -v -d -m 0755
+data_install        ?= install -v -m 0644
+mkinstalldir        ?= install -v -d -m 0755
 
-builddir	    ?= build
-srcdir		    ?= src
-prefix		    ?= /usr/local
+builddir            ?= build
+srcdir              ?= src
+prefix              ?= /usr/local
 
 
 all : build
@@ -156,8 +156,8 @@ endef
 #	@echo Finished building project: $(2)
 #
 define generic_build
-  g_srcdir	:= $$(srcdir)$$(patsubst /top/,/,/$(2)/)
-  g_builddir	:= $$(builddir)$$(patsubst /top/,/,/$(2)/)
+  g_srcdir      := $$(srcdir)$$(patsubst /top/,/,/$(2)/)
+  g_builddir    := $$(builddir)$$(patsubst /top/,/,/$(2)/)
 
   .PHONY: build_$(2)
   build_$(2) : g_srcdir := $$(g_srcdir)
