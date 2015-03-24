@@ -100,7 +100,7 @@ then
     ret=$ret_unkn
     res="Cache '$cache' is older, than '$fresh' minutes ago."
 else
-    ret="$(head -c 1 "$cache")"
+    ret="$(head -n 1 "$cache")"
     if [ "$ret" != "$ret_ok" \
         -a "$ret" != "$ret_warn" \
         -a "$ret" != "$ret_crit" \
