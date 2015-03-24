@@ -21,7 +21,7 @@ readonly ret_ok=0
 # Line 1 is return code.
 # All following lines are plugin stdout.
 
-cache_file=''
+cache=''
 fresh=0
 plugin=''
 # I rely below, that initial values are $ret_unkn and empty $res .
@@ -49,7 +49,7 @@ while [ $# -gt 0 ]; do
         exit $ret_unkn
       ;;
       '--cache' )
-        cache_file="$2"
+        cache="$2"
         shift 2
       ;;
       '--fresh' )
@@ -69,19 +69,19 @@ done
 readonly plugin
 
 ### Check args.
-cache_file="${cache_file:-${plugin:+$(basename "$plugin").cache}}"
-if [ -z "$cache_file" ]; then
+cache="${cache:-${plugin:+$(basename "$plugin").cache}}"
+if [ -z "$cache" ]; then
     ret=$ret_unkn
     res="No cache file specified, $(usage)"
     send
 fi
 # Default cache directory, if path is relative.
-if [ "${cache_file#.}" != "$cache_file" ]; then
-    cache_file="$(pwd)/$cache_file"
-elif [ "${cache_file#/}" = "$cache_file" ]; then
-    cache_file="/var/cache/nagios3/$cache_file"
+if [ "${cache#.}" != "$cache" ]; then
+    cache="$(pwd)/$cache"
+elif [ "${cache#/}" = "$cache" ]; then
+    cache="/var/cache/nagios3/$cache"
 fi
-readonly cache_file
+readonly cache
 IFS="$nl"
 set -- $fresh
 if [ $# -gt 1 ] || echo "$fresh" | grep -q -e '[^0-9]'; then
@@ -92,15 +92,15 @@ fi
 IFS="$OIFS"
 readonly fresh
 
-if [ ! -r "$cache_file" ]; then
+if [ ! -r "$cache" ]; then
     ret=$ret_unkn
-    res="Can't read cache '$cache_file'."
-elif [ "$fresh" -gt 0 -a -z "$(find "$cache_file" -mmin -"$fresh")" ];
+    res="Can't read cache '$cache'."
+elif [ "$fresh" -gt 0 -a -z "$(find "$cache" -mmin -"$fresh")" ];
 then
     ret=$ret_unkn
-    res="Cache '$cache_file' is older, than '$fresh' minutes ago."
+    res="Cache '$cache' is older, than '$fresh' minutes ago."
 else
-    ret="$(head -c 1 "$cache_file")"
+    ret="$(head -c 1 "$cache")"
     if [ "$ret" != "$ret_ok" \
         -a "$ret" != "$ret_warn" \
         -a "$ret" != "$ret_crit" \
@@ -109,7 +109,7 @@ else
         res="Unexpected plugin exit code '$ret'"
         ret=$ret_unkn
     fi
-    res="${res:+$res, }$(tail -n '+2' "$cache_file")"
+    res="${res:+$res, }$(tail -n '+2' "$cache")"
 fi
 send
 
