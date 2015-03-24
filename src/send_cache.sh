@@ -33,6 +33,13 @@ usage()
     echo "Usage: $(basename $0) [--cache path] [--fresh minutes] [plugin which cache to read]"
 }
 
+# Send results. Uses global variables $ret and $res .
+send()
+{
+    echo "${res:-Output was empty..}"
+    exit $ret
+}
+
 # All options must be before non-option arguments. Use '--' to terminate
 # option list explicitly.
 while [ $# -gt 0 ]; do
@@ -66,6 +73,7 @@ cache_file="${cache_file:-${plugin:+$(basename "$plugin").cache}}"
 if [ -z "$cache_file" ]; then
     ret=$ret_unkn
     res="No cache file specified, $(usage)"
+    send
 fi
 # Default cache directory, if path is relative.
 if [ "${cache_file#.}" != "$cache_file" ]; then
@@ -79,34 +87,29 @@ set -- $fresh
 if [ $# -gt 1 ] || echo "$fresh" | grep -q -e '[^0-9]'; then
     ret=$ret_unkn
     res="Incorrect fresh interval '$fresh'."
+    send
 fi
 IFS="$OIFS"
 readonly fresh
 
-# Assume, that initial result is empty. And if result is still empty, no
-# errors was found so far.
-if [ -z "$res" ]; then
-    if [ ! -r "$cache_file" ]; then
-        ret=$ret_unkn
-        res="Can't read cache '$cache_file'."
-    elif [ "$fresh" -gt 0 -a -z "$(find "$cache_file" -mmin -"$fresh")" ];
+if [ ! -r "$cache_file" ]; then
+    ret=$ret_unkn
+    res="Can't read cache '$cache_file'."
+elif [ "$fresh" -gt 0 -a -z "$(find "$cache_file" -mmin -"$fresh")" ];
+then
+    ret=$ret_unkn
+    res="Cache '$cache_file' is older, than '$fresh' minutes ago."
+else
+    ret="$(head -c 1 "$cache_file")"
+    if [ "$ret" != "$ret_ok" \
+        -a "$ret" != "$ret_warn" \
+        -a "$ret" != "$ret_crit" \
+        -a "$ret" != "$ret_unkn" ];
     then
+        res="Unexpected plugin exit code '$ret'"
         ret=$ret_unkn
-        res="Cache '$cache_file' is older, than '$fresh' minutes ago."
-    else
-        ret="$(head -c 1 "$cache_file")"
-        if [ "$ret" != "$ret_ok" \
-            -a "$ret" != "$ret_warn" \
-            -a "$ret" != "$ret_crit" \
-            -a "$ret" != "$ret_unkn" ];
-        then
-            res="Unexpected plugin exit code '$ret'"
-            ret=$ret_unkn
-        fi
-        res="${res:+$res, }$(tail -n '+2' "$cache_file")"
     fi
+    res="${res:+$res, }$(tail -n '+2' "$cache_file")"
 fi
-
-echo "${res:-Output was empty..}"
-exit $ret
+send
 
