@@ -95,10 +95,6 @@ readonly fresh
 if [ ! -r "$cache" ]; then
     ret=$ret_unkn
     res="Can't read cache '$cache'."
-elif [ "$fresh" -gt 0 -a -z "$(find "$cache" -mmin -"$fresh")" ];
-then
-    ret=$ret_unkn
-    res="Cache '$cache' is older, than '$fresh' minutes ago."
 else
     ret="$(head -n 1 "$cache")"
     if [ "$ret" != "$ret_ok" \
@@ -108,6 +104,12 @@ else
     then
         res="Unexpected plugin exit code '$ret'"
         ret=$ret_unkn
+    elif [ "$fresh" -gt 0 -a -z "$(find "$cache" -mmin -"$fresh")" ];
+    then
+	res="Cache '$cache' is older, than '$fresh' minutes ago"
+	if [ "$ret" = "$ret_ok" ]; then
+	    ret=$ret_warn
+	fi
     fi
     res="${res:+$res, }$(tail -n '+2' "$cache")"
 fi
