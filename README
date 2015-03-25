@@ -23,3 +23,10 @@ write-plugin-cache, i may just call send-cache with plugin name (the same way
 as i did for write-plugin-cache) . Then send-cache will also assume default
 cache file name for plugin.
 
+send-cache also tries to simulate "freshness" nagios logic: it accepts
+'--fresh' option, which specifies maximum cache file age in minutes. If cache
+file is older, send-cache will try to run write-plugin-cache with plugin name,
+if not empty (thus, if i don't won't to re-run plugin, when '--fresh' expires,
+i should specify cache using '--cache', not through plugin name). Any plugin
+arguments passed to send-cache will be passed through to write-plugin-cache
+too.
